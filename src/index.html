@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#120e1c">
+  <meta name="description" content="Seven anime trivia prompts every day. Find an anime that fits and score more for deeper cuts.">
+  <title>Animillion · Daily anime rarity trivia</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" type="module"></script>
+</head>
+<body>
+  <header class="masthead">
+    <nav class="frame nav" aria-label="Main navigation">
+      <a class="brand" href="./" id="home-link" aria-label="Animillion home">
+        <span class="channel-logo" aria-hidden="true"><span></span></span>
+        Animillion<span class="brand-period" aria-hidden="true">.</span>
+      </a>
+      <button class="help ghost" type="button" id="open-help"><span aria-hidden="true">?</span> How to play</button>
+    </nav>
+  </header>
+
+  <main class="frame" id="main">
+    <div id="home">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="live-dot"></span> Daily anime trivia</p>
+          <h1 id="hero-title" tabindex="-1">Good anime.<br><em>Deep cuts.</em></h1>
+          <p class="hero-description">Seven prompts. Think of an anime that fits. The more obscure your answer, the more you score.</p>
+          <div class="home-actions">
+            <button type="button" class="button primary" id="daily-button">Play daily <span aria-hidden="true">→</span></button>
+            <button type="button" class="button secondary" id="practice-button">Practice <span aria-hidden="true">↗</span></button>
+          </div>
+        </div>
+        <div class="broadcast-stamp"><span class="stamp-icon" aria-hidden="true">◉</span><span><small>DAILY BROADCAST</small><strong id="broadcast-date"></strong></span></div>
+      </section>
+
+      <section class="format" aria-label="Round format">
+        <div><span class="format-icon" aria-hidden="true">▤</span><p><strong>7 prompts</strong><small>A new lineup every day</small></p></div>
+        <div><span class="format-icon" aria-hidden="true">◴</span><p><strong>25 seconds</strong><small>One title per prompt</small></p></div>
+        <div><span class="format-icon" aria-hidden="true">✦</span><p><strong>700 points</strong><small>Rarer answers score higher</small></p></div>
+      </section>
+    </div>
+
+    <section id="game" class="game-layout" aria-label="Current game" hidden>
+      <div class="game-top"><button type="button" id="leave-game" class="ghost back" aria-label="Back to home">← <span>Home</span></button><span id="game-label" class="eyebrow"></span></div>
+      <div class="game-panel">
+        <div class="game-stats">
+          <div><span class="meta">PROMPT</span><strong id="round-number"></strong></div>
+          <div class="segments" id="segments" aria-hidden="true"></div>
+          <div><span class="meta">SCORE</span><strong id="game-score"></strong></div>
+        </div>
+        <div class="clue-body">
+          <div class="clue-head"><span id="category" class="eyebrow"></span><span id="clock" class="clock" aria-label="Time remaining"></span></div>
+          <h1 id="prompt" tabindex="-1"></h1>
+          <div class="timer-track" id="timer-track" aria-hidden="true"><span id="timer-fill"></span></div>
+          <form id="guess-form" autocomplete="off" hidden>
+            <label for="guess" class="sr-only">Anime title</label>
+            <div class="answer-row"><input id="guess" type="text" maxlength="160" placeholder="Type an anime title…" required spellcheck="false" enterkeyhint="go"><button type="submit" class="button primary" id="submit-button">Submit <span aria-hidden="true">→</span></button></div>
+          </form>
+          <p id="phase-message" class="phase-message" role="status"></p>
+          <div class="verdict" id="verdict" hidden>
+            <p id="verdict-title" class="verdict-title"></p>
+            <a id="media-link" target="_blank" rel="noopener noreferrer" hidden></a>
+            <p id="verdict-detail"></p>
+          </div>
+          <div class="game-actions" id="game-actions" hidden>
+            <button class="button primary" id="next-button" type="button">Next prompt →</button>
+            <button class="button primary" id="retry-button" type="button">Retry check</button>
+            <button class="button secondary" id="skip-button" type="button">Skip prompt</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="game-layout" id="results" aria-labelledby="results-title" hidden>
+      <div class="game-top"><button id="leave-results" type="button" class="ghost back">← <span>Home</span></button><span id="results-label" class="eyebrow"></span></div>
+      <div class="game-panel results-panel">
+        <div class="results-top">
+          <h1 id="results-title" tabindex="-1">Round complete.</h1>
+          <p class="big-score"><strong id="result-score"></strong><span> / 700</span></p>
+          <div class="result-marks" id="result-marks" aria-hidden="true"></div>
+          <div class="game-actions"><button type="button" class="button primary" id="share-button">Share result <span aria-hidden="true">↗</span></button><button type="button" class="button secondary" id="replay-button">Play practice <span aria-hidden="true">→</span></button></div>
+          <p id="share-status" class="phase-message" role="status"></p>
+          <textarea id="manual-share" aria-label="Share result text" rows="4" readonly hidden></textarea>
+        </div>
+        <ol id="result-list" class="result-list"></ol>
+      </div>
+    </section>
+  </main>
+
+  <footer class="frame footer"><p><span class="footer-star" aria-hidden="true">✦</span> Animillion</p><a href="https://anilist.co/" target="_blank" rel="noopener noreferrer">Anime data from AniList <span aria-hidden="true">↗</span></a></footer>
+
+  <dialog id="rules" aria-labelledby="rules-title">
+    <div class="dialog-head"><span class="eyebrow">Animillion</span><form method="dialog"><button aria-label="Close how to play" class="ghost dialog-close">×</button></form></div>
+    <h2 id="rules-title">How to play</h2>
+    <ol>
+      <li>Read the prompt during the 3-second preview.</li>
+      <li>When the field opens, you have 25 seconds to type and submit one anime title. English, romaji, native titles, and AniList-listed synonyms work when AniList returns them.</li>
+      <li>Pick a deep cut. A correct answer earns 10 to 100 points based on how many people list it on AniList.</li>
+    </ol>
+    <p>Eligible entries include released TV series, films, and streaming series listed with at least two episodes. Tag prompts use AniList tags with a relevance of 60 or more and exclude spoiler tags.</p>
+    <p>The daily resets at midnight UTC. Practice has the same format and can be played anytime.</p>
+  </dialog>
+</body>
+</html>
