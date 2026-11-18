@@ -1,7 +1,7 @@
 import { AniListError, verifyGuess } from './anilist.js';
 import {
   advanceClock, ANSWER_MS, finishGuess, newRound, nextPrompt, PREVIEW_MS,
-  restoreRound, ROUND_SIZE, shareText, submitGuess, tiers, totalPoints, utcDay,
+  resolveGuess, restoreRound, ROUND_SIZE, shareText, submitGuess, tiers, totalPoints, utcDay,
 } from './game.js';
 import { promptById } from './prompts.js';
 
@@ -91,18 +91,18 @@ function commit(value, focus = false) {
 
 function renderTimer(now) {
   if (!round || round.phase === 'complete') return;
-  const timed = round.phase === 'answer' || round.phase === 'preview';
+  const timed = Number.isFinite(round.deadline);
   const clock = byId('clock');
   let remaining = 0;
   if (timed) {
-    const duration = round.phase === 'answer' ? ANSWER_MS : PREVIEW_MS;
+    const duration = round.phase === 'preview' ? PREVIEW_MS : ANSWER_MS;
     remaining = Math.max(0, round.deadline - now);
     byId('timer-fill').style.transform = `scaleX(${Math.min(1, remaining / duration)})`;
   }
   const seconds = `${Math.ceil(remaining / 1000)}s`;
   const label = timed ? seconds : '—';
   if (clock.textContent !== label) clock.textContent = label;
-  clock.classList.toggle('urgent', round.phase === 'answer' && remaining <= 5000);
+  clock.classList.toggle('urgent', timed && round.phase !== 'preview' && remaining <= 5000);
   byId('timer-track').hidden = !timed;
 
   if (round.phase === 'unavailable') {
@@ -164,7 +164,8 @@ function renderGame(focus) {
     mark.className = result ? (result.points ? 'scored' : 'missed') : index === round.index ? 'active' : '';
     return mark;
   }));
-  form.hidden = phase !== 'answer';
+  form.hidden = phase !== 'answer' && phase !== 'checking';
+  byId('submit-button').disabled = phase !== 'answer';
   byId('verdict').hidden = !feedback;
   byId('game-actions').hidden = !feedback && !unavailable;
   next.hidden = !feedback;
@@ -176,6 +177,10 @@ function renderGame(focus) {
   }
   const phaseText = {
     preview: 'Read the prompt. The answer field opens in a moment.',
+    answer: {
+      incorrect: 'That title doesn’t fit the prompt. Try another.',
+      unknown: 'AniList couldn’t find that title. Try another title or spelling.',
+    }[round.lastMiss],
     checking: `Checking “${round.pending}” on AniList…`,
     unavailable: `${errorMessage || 'The answer check was interrupted.'} Your guess is saved.`,
   };
@@ -234,7 +239,7 @@ function renderResults(focus) {
 async function checkAnswer(checking) {
   if (retryAt > Date.now()) {
     errorMessage = 'AniList asked us to slow down.';
-    commit({ ...checking, phase: 'unavailable' }, true);
+    commit(advanceClock({ ...checking, phase: 'unavailable' }, Date.now()), true);
     return;
   }
   commit(checking);
@@ -242,7 +247,9 @@ async function checkAnswer(checking) {
     const verdict = await verifyGuess(checking.pending, promptById.get(checking.promptIds[checking.index]));
     if (round !== checking) return;
     liveTitle = verdict.title ?? '';
-    commit(finishGuess(checking, verdict.outcome, verdict.points, verdict.mediaId), true);
+    const updated = resolveGuess(checking, verdict, Date.now());
+    if (updated.phase === 'answer' && input.value.trim() === checking.pending) input.value = '';
+    commit(updated, true);
   } catch (error) {
     if (error instanceof AniListError && error.retryAt > retryAt) {
       retryAt = error.retryAt;
@@ -250,7 +257,7 @@ async function checkAnswer(checking) {
     }
     if (round !== checking) return;
     errorMessage = error instanceof AniListError ? error.message : 'The answer check was interrupted.';
-    commit({ ...checking, phase: 'unavailable' }, true);
+    commit(advanceClock({ ...checking, phase: 'unavailable' }, Date.now()), true);
   }
 }
 
@@ -269,7 +276,11 @@ next.addEventListener('click', () => {
   commit(nextPrompt(round, Date.now()), true);
 });
 retry.addEventListener('click', () => {
-  if (round?.phase === 'unavailable' && retryAt <= Date.now()) void checkAnswer({ ...round, phase: 'checking' });
+  if (round?.phase !== 'unavailable') return;
+  const now = Date.now();
+  const updated = advanceClock(round, now);
+  if (updated !== round) commit(updated, true);
+  else if (retryAt <= now) void checkAnswer({ ...round, phase: 'checking' });
 });
 byId('skip-button').addEventListener('click', () => {
   if (round?.phase === 'unavailable') commit(finishGuess(round, 'skipped'), true);

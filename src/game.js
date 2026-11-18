@@ -55,8 +55,8 @@ export function newRound(mode, day, now, previous = []) {
 }
 
 export function finishGuess(round, outcome, points = 0, mediaId) {
-  const { pending, ...rest } = round;
-  const result = { outcome, points, ...(pending && { guess: pending }), ...(mediaId && { mediaId }) };
+  const { pending, lastMiss, ...rest } = round;
+  const result = { outcome, points, ...(pending && outcome !== 'timeout' && { guess: pending }), ...(mediaId && { mediaId }) };
   return { ...rest, results: [...round.results, result], phase: 'feedback', deadline: null };
 }
 
@@ -64,7 +64,8 @@ export function advanceClock(round, now) {
   if (round.phase === 'preview' && now >= round.deadline) {
     round = { ...round, phase: 'answer', deadline: round.deadline + ANSWER_MS };
   }
-  if (round.phase === 'answer' && now >= round.deadline) {
+  if ((round.phase === 'answer' || round.phase === 'unavailable') &&
+      Number.isFinite(round.deadline) && now >= round.deadline) {
     return finishGuess(round, 'timeout');
   }
   return round;
@@ -74,7 +75,15 @@ export function submitGuess(round, input, now) {
   const current = advanceClock(round, now);
   const guess = input.trim();
   if (current.phase !== 'answer' || !guess) return current;
-  return { ...current, pending: guess, phase: 'checking', deadline: null };
+  return { ...current, pending: guess, phase: 'checking' };
+}
+
+export function resolveGuess(round, verdict, now) {
+  if (round.phase !== 'checking') return round;
+  if (verdict.outcome === 'correct') return finishGuess(round, 'correct', verdict.points, verdict.mediaId);
+  if (!Number.isFinite(round.deadline) || now >= round.deadline) return finishGuess(round, 'timeout');
+  const { pending, ...rest } = round;
+  return { ...rest, phase: 'answer', lastMiss: verdict.outcome };
 }
 
 export function nextPrompt(round, now) {
@@ -90,7 +99,7 @@ export function restoreRound(round, now) {
       !round.promptIds.every((id) => promptById.has(id)) ||
       !Number.isInteger(round.index) || round.index < 0 || round.index >= ROUND_SIZE ||
       !Array.isArray(round.results) || round.results.length > ROUND_SIZE) return null;
-  if (round.phase === 'checking') return { ...round, phase: 'unavailable' };
+  if (round.phase === 'checking') round = { ...round, phase: 'unavailable' };
   return advanceClock(round, now);
 }
 

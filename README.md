@@ -1,6 +1,6 @@
 # Animillion
 
-Animillion is a daily anime trivia game. Name one anime for each of seven prompts. Correct titles score more when fewer AniList users have them on their lists. The daily challenge resets at midnight UTC. Practice is replayable.
+Animillion is a daily anime trivia game. Find one anime that fits each of seven prompts. Keep guessing until you find a valid title or the 25-second timer runs out. Correct titles score more when fewer AniList users have them on their lists. The daily challenge resets at midnight UTC. Practice is replayable.
 
 ## Run locally
 
